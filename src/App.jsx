@@ -1,14 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
+import React from 'react';
 import { BackgroundOrbs } from './components/BackgroundOrbs';
-import { BottomNav } from './components/BottomNav';
 import { TimetableUploader } from './components/TimetableUploader';
-import { ScheduleTab } from './tabs/ScheduleTab';
 import { AcademicsTab } from './tabs/AcademicsTab';
-import { WellnessTab } from './tabs/WellnessTab';
-import { ProfileTab } from './tabs/ProfileTab';
 import { useStore } from './store/useStore';
-import { generateSeedNotes } from './utils/generateNotes';
 
 class AppErrorBoundary extends React.Component {
   constructor(props) {
@@ -39,7 +33,7 @@ class AppErrorBoundary extends React.Component {
               Refreshing your sanctuary ✨
             </h2>
             <p className="text-sm text-gray-300">
-              Tap below to refresh your local cache and jump right back in.
+              Click below to refresh your local cache and jump right back in.
             </p>
             <button
               type="button"
@@ -57,37 +51,10 @@ class AppErrorBoundary extends React.Component {
 }
 
 export function AppContent() {
-  const [activeTab, setActiveTab] = useState('Schedule');
   const timetable = useStore((state) => state.timetable);
-  const notes = useStore((state) => state.notes);
   const isRoughDay = useStore((state) => state.isRoughDay);
 
-  useEffect(() => {
-    const safeNotes = Array.isArray(notes) ? notes : [];
-    const seededCount = safeNotes.filter(
-      (n) => n && n.category !== 'random_love'
-    ).length;
-    if (seededCount < 500) {
-      generateSeedNotes();
-    }
-  }, [notes]);
-
   const hasTimetable = Array.isArray(timetable) && timetable.length > 0;
-
-  const renderTabContent = () => {
-    switch (activeTab) {
-      case 'Schedule':
-        return <ScheduleTab />;
-      case 'Academics':
-        return <AcademicsTab />;
-      case 'Wellness':
-        return <WellnessTab />;
-      case 'Profile':
-        return <ProfileTab />;
-      default:
-        return <ScheduleTab />;
-    }
-  };
 
   return (
     <div
@@ -103,25 +70,9 @@ export function AppContent() {
           <TimetableUploader />
         </div>
       ) : (
-        <div key="main-app-shell" className="relative z-10">
-          {/* Main Content Shell */}
-          <main className="relative z-10 mx-auto max-w-md px-4 pt-6 pb-24">
-            <AnimatePresence mode="wait" initial={false}>
-              <motion.div
-                key={activeTab}
-                initial={{ opacity: 0.85, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -8 }}
-                transition={{ duration: 0.2, ease: 'easeOut' }}
-              >
-                {renderTabContent()}
-              </motion.div>
-            </AnimatePresence>
-          </main>
-
-          {/* Fixed Glassmorphic Bottom Navigation */}
-          <BottomNav activeTab={activeTab} setActiveTab={setActiveTab} />
-        </div>
+        <main className="relative z-10 mx-auto w-full max-w-4xl p-8">
+          <AcademicsTab />
+        </main>
       )}
     </div>
   );
