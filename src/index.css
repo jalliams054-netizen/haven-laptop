@@ -1,0 +1,39 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  @font-face {
+    font-family: 'Playfair Display';
+    src: local('Playfair Display'), local('PlayfairDisplay-Regular'), local('Georgia'), local('Times New Roman');
+    font-display: swap;
+  }
+
+  @font-face {
+    font-family: 'Inter';
+    src: local('Inter'), local('Inter-Regular'), local('system-ui'), local('-apple-system');
+    font-display: swap;
+  }
+
+  body {
+    @apply bg-charcoal text-white font-sans;
+    background-color: #0a0a0a;
+    color: #ffffff;
+  }
+}
+
+@layer components {
+  .glass-card {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 1.5rem;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  }
+}
+
+.active-icon-glow {
+  filter: drop-shadow(0 0 8px rgba(245, 158, 11, 0.6));
+  color: #fbbf24;
+}
