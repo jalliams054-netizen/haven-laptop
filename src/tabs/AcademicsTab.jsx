@@ -125,8 +125,17 @@ export function AcademicsTab() {
   // Filter VLE classes from effective timetable
   const vleClasses = useMemo(() => {
     if (!Array.isArray(effectiveTimetable)) return [];
-    return effectiveTimetable.filter((cls) => cls.type === 'vle');
+    return effectiveTimetable.filter(
+      (cls) =>
+        cls.type === 'vle' ||
+        String(cls.room || '').trim().toUpperCase().includes('VLE')
+    );
   }, [effectiveTimetable]);
+
+  // Check if any VLE class has a saved link yet
+  const hasAnySavedVleLinks = useMemo(() => {
+    return vleClasses.some((vle) => Boolean(vleLinks?.[vle.id]?.trim()));
+  }, [vleClasses, vleLinks]);
 
   const showToast = (msg) => {
     setToastMessage(msg);
@@ -155,21 +164,24 @@ export function AcademicsTab() {
     showToast('Crushed it! VLE link saved 💻');
   };
 
-  const handleCopyVleLink = async (e, id, href) => {
+  const handleCopyVleLink = async (e, id, savedLink) => {
     e.preventDefault();
     e.stopPropagation();
     try {
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        await navigator.clipboard.writeText(href);
-      }
+      await navigator.clipboard.writeText(savedLink);
     } catch {
-      // Fallback if clipboard API is restricted
+      const textarea = document.createElement('textarea');
+      textarea.value = savedLink;
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textarea);
     }
     setCopiedId(id);
-    showToast('Link copied! 💻');
+    showToast('Copied!');
     setTimeout(() => {
-      setCopiedId(null);
-    }, 2400);
+      setCopiedId((prev) => (prev === id ? null : prev));
+    }, 2200);
   };
 
   const handleAddTask = (e) => {
@@ -204,7 +216,7 @@ export function AcademicsTab() {
         </h1>
       </header>
 
-      {/* Step 1: "My VLE Links" Section at Top of Academics Tab */}
+      {/* VLE Command Center ("My VLE Links") — Optimized for Laptop & Mobile */}
       <section className="space-y-3">
         <div className="flex items-center justify-between px-1">
           <div className="flex items-center gap-2">
@@ -214,9 +226,17 @@ export function AcademicsTab() {
             </h2>
           </div>
           <span className="text-xs text-gray-400">
-            {vleClasses.length} virtual {vleClasses.length === 1 ? 'class' : 'classes'}
+            {vleClasses.length} virtual{' '}
+            {vleClasses.length === 1 ? 'class' : 'classes'}
           </span>
         </div>
+
+        {/* 4. Empty State / Instructions when no VLE links have been added yet */}
+        {!hasAnySavedVleLinks && (
+          <div className="glass-card border border-amber-400/20 bg-white/[0.03] px-4 py-3 text-xs leading-relaxed text-gray-300">
+            Add your Zoom or Teams links here to join your online classes directly from your laptop.
+          </div>
+        )}
 
         {vleClasses.length === 0 ? (
           <div className="glass-card p-5 text-center text-sm text-gray-400">
@@ -255,13 +275,13 @@ export function AcademicsTab() {
                     </div>
                   </div>
 
-                  {/* Link Action: "Add Link" if unsaved, or "Join Class" <a> + Copy button if saved */}
-                  <div className="flex flex-shrink-0 items-center gap-1.5">
+                  {/* 2 & 3. Flawless Link Opening (<a> with target="_blank" rel="noopener noreferrer") + One-Click Copy Button */}
+                  <div className="flex flex-shrink-0 items-center gap-2">
                     {!savedLink ? (
                       <button
                         type="button"
                         onClick={() => handleOpenAddLinkModal(vle)}
-                        className="inline-flex items-center gap-1.5 rounded-xl border border-amber-400/35 bg-amber-500/20 px-3.5 py-2 text-xs font-medium text-amber-300 transition hover:bg-amber-500/30"
+                        className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-amber-400/35 bg-amber-500/20 px-3.5 py-2 text-xs font-medium text-amber-300 transition-colors hover:bg-amber-500/30"
                       >
                         <Link2 className="h-3.5 w-3.5" />
                         <span>Add Link</span>
@@ -272,7 +292,7 @@ export function AcademicsTab() {
                           href={savedLink}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1.5 rounded-xl border border-amber-400/40 bg-amber-500/25 px-3.5 py-2 text-xs font-semibold text-amber-200 shadow-[0_0_14px_rgba(245,158,11,0.2)] transition hover:bg-amber-500/35"
+                          className="inline-flex items-center gap-1.5 rounded-xl border border-amber-400/40 bg-amber-500/20 px-3.5 py-2 text-xs font-semibold text-amber-300 shadow-[0_0_14px_rgba(245,158,11,0.2)] transition-colors hover:bg-amber-500/30"
                         >
                           <span>Join Class</span>
                           <ExternalLink className="h-3.5 w-3.5" />
@@ -283,15 +303,30 @@ export function AcademicsTab() {
                           onClick={(e) =>
                             handleCopyVleLink(e, vle.id, savedLink)
                           }
-                          title="Copy link"
-                          aria-label="Copy link"
-                          className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/15 bg-white/5 text-amber-300 transition hover:border-amber-400/40 hover:bg-amber-500/20"
+                          title="Copy link to clipboard"
+                          aria-label="Copy link to clipboard"
+                          className="inline-flex h-9 items-center justify-center gap-1 rounded-xl border border-white/15 bg-white/5 px-2.5 text-xs font-medium text-amber-300 transition-colors hover:border-amber-400/40 hover:bg-amber-500/20"
                         >
                           {isCopied ? (
-                            <Check className="h-4 w-4 text-emerald-300" />
+                            <>
+                              <Check className="h-3.5 w-3.5 text-emerald-300" />
+                              <span className="text-[11px] text-emerald-300">
+                                Copied!
+                              </span>
+                            </>
                           ) : (
                             <Copy className="h-4 w-4" />
                           )}
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => handleOpenAddLinkModal(vle)}
+                          title="Edit link"
+                          aria-label="Edit link"
+                          className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-gray-400 transition-colors hover:border-white/25 hover:text-white"
+                        >
+                          <Link2 className="h-3.5 w-3.5" />
                         </button>
                       </>
                     )}
@@ -331,7 +366,7 @@ export function AcademicsTab() {
         </section>
       )}
 
-      {/* Add VLE Link Modal */}
+      {/* 1. Laptop-Friendly Link Input Modal (max-w-md / w-96) */}
       <AnimatePresence>
         {editingVleClass && (
           <motion.div
@@ -345,7 +380,7 @@ export function AcademicsTab() {
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.94, opacity: 0, y: 12 }}
               onSubmit={handleSaveVleLink}
-              className="glass-card w-full max-w-md space-y-4 border border-amber-400/30 bg-charcoal/95 p-6"
+              className="glass-card w-full max-w-md space-y-4 border border-amber-400/30 bg-charcoal/95 p-6 shadow-2xl sm:w-96"
             >
               <div className="flex items-center justify-between">
                 <div>
@@ -368,15 +403,16 @@ export function AcademicsTab() {
 
               <div>
                 <label className="mb-1.5 block text-xs font-medium text-gray-300">
-                  Zoom / Teams / VLE Portal URL
+                  Class Meeting Link
                 </label>
                 <input
                   type="url"
                   required
+                  autoFocus
                   value={vleUrlInput}
                   onChange={(e) => setVleUrlInput(e.target.value)}
-                  placeholder="https://zoom.us/j/..."
-                  className="w-full rounded-xl border border-white/10 bg-black/40 px-3.5 py-2.5 text-sm text-white placeholder-gray-500 focus:border-amber-400/60 focus:outline-none"
+                  placeholder="Paste your Zoom, Teams, or VLE URL here..."
+                  className="w-full rounded-xl border border-white/15 bg-black/40 px-4 py-3 text-sm text-white placeholder-gray-500 focus:border-amber-400/60 focus:outline-none"
                 />
               </div>
 
@@ -384,13 +420,13 @@ export function AcademicsTab() {
                 <button
                   type="button"
                   onClick={() => setEditingVleClass(null)}
-                  className="flex-1 rounded-xl border border-white/15 bg-white/5 py-2.5 text-xs font-medium text-gray-300 hover:bg-white/10"
+                  className="flex-1 rounded-xl border border-white/15 bg-white/5 py-2.5 text-xs font-medium text-gray-300 transition-colors hover:bg-white/10"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 rounded-xl border border-amber-400/40 bg-amber-500/25 py-2.5 text-xs font-semibold text-amber-200 shadow-[0_0_16px_rgba(245,158,11,0.25)] hover:bg-amber-500/35"
+                  className="flex-1 rounded-xl border border-amber-400/40 bg-amber-500/25 py-2.5 text-xs font-semibold text-amber-200 shadow-[0_0_16px_rgba(245,158,11,0.25)] transition-colors hover:bg-amber-500/35"
                 >
                   Save Link
                 </button>
